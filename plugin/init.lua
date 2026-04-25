@@ -12,7 +12,6 @@ local function track_workspace(name)
 end
 
 local function perform_tracked_switch(window, pane, name, spawn)
-  if not name or name == "" then return end
   track_workspace(window:active_workspace())
   track_workspace(name)
   local action = { name = name }
@@ -22,14 +21,12 @@ end
 
 local function switch_to_alternate_workspace_action()
   return wezterm.action_callback(function(window, pane)
-    track_workspace(window:active_workspace())
+    local current = window:active_workspace()
+    track_workspace(current)
     if not workspace_cache.is_ready() then return end
     local history = workspace_cache.get_cache()
-    local current = window:active_workspace()
     local target = history[1] == current and history[2] or history[1]
-    if target and target ~= current then
-      perform_tracked_switch(window, pane, target)
-    end
+    perform_tracked_switch(window, pane, target)
   end)
 end
 
