@@ -5,10 +5,9 @@ local M = {}
 local fifo_cache = wezterm.plugin.require("https://github.com/roumail/fifo-cache")
 local workspace_cache = fifo_cache.new(2)
 
-local function perform_tracked_switch(window, pane, name, spawn)
-  workspace_cache.add_value(window:active_workspace())
-  workspace_cache.add_value(name)
-  local action = { name = name }
+local function perform_tracked_switch(window, pane, target, spawn)
+  workspace_cache.add_value(target)
+  local action = { name = target }
   if spawn then action.spawn = spawn end
   window:perform_action(wezterm.action.SwitchToWorkspace(action), pane)
 end
