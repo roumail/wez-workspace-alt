@@ -5,15 +5,9 @@ local M = {}
 local fifo_cache = wezterm.plugin.require("https://github.com/roumail/fifo-cache")
 local workspace_cache = fifo_cache.new(2)
 
-local function track_workspace(name)
-  if name and name ~= "" then
-    workspace_cache.add_value(name)
-  end
-end
-
 local function perform_tracked_switch(window, pane, name, spawn)
-  track_workspace(window:active_workspace())
-  track_workspace(name)
+  workspace_cache.add_value(window:active_workspace())
+  workspace_cache.add_value(name)
   local action = { name = name }
   if spawn then action.spawn = spawn end
   window:perform_action(wezterm.action.SwitchToWorkspace(action), pane)
@@ -22,7 +16,7 @@ end
 local function switch_to_alternate_workspace_action()
   return wezterm.action_callback(function(window, pane)
     local current = window:active_workspace()
-    track_workspace(current)
+    workspace_cache.add_value(current)
     if not workspace_cache.is_ready() then return end
     local history = workspace_cache.get_cache()
     local target = history[1] == current and history[2] or history[1]
