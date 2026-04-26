@@ -22,16 +22,16 @@ local function rebalance_cache(current)
 
   local in_cache = {}
   for _, v in ipairs(cache) do
-      in_cache[v] = true
+    in_cache[v] = true
   end
 
   if not in_cache[DEFAULT_WORKSPACE] then
-      for _, v in ipairs(current) do
-          if v == DEFAULT_WORKSPACE then
-              workspace_cache.add_value(v)
-              return
-          end
+    for _, v in ipairs(current) do
+      if v == DEFAULT_WORKSPACE then
+        workspace_cache.add_value(v)
+        return
       end
+    end
   end
 
   -- Otherwise pick the first sorted candidate not already in cache
@@ -46,12 +46,12 @@ local function rebalance_cache(current)
 end
 
 wezterm.on('workspace-removed', function(event)
-   ready_prior = workspace_cache.is_ready()
-   workspace_cache.evict_keys(event.removed)
-   ready_post = workspace_cache.is_ready()
-   if ready_prior and not ready_post then
-     rebalance_cache(event.current)
-   end
+  ready_prior = workspace_cache.is_ready()
+  workspace_cache.evict_keys(event.removed)
+  ready_post = workspace_cache.is_ready()
+  if ready_prior and not ready_post then
+    rebalance_cache(event.current)
+  end
 end)
 
 M.modes = {
@@ -86,7 +86,7 @@ M.modes = {
     return wezterm.action.SpawnCommandInNewTab({
       domain="CurrentPaneDomain",
       cwd = ctx.path,
-  })
+    })
   end,
 
   split_h = function(ctx)
@@ -140,27 +140,27 @@ function M.project_selector(opts)
     choices = choices,
     fuzzy = true,
     action = wezterm.action_callback(function(window, pane, path, label)
-    local ctx = {
-      window = window,
-      pane = pane,
-      path = path,
-      label = label,
-      current_workspace = window:active_workspace(),
-      workspace_history = workspace_cache.get_cache(),
-      mode = mode,
-    }
-    -- passing args to action?
-    local action = resolve_action(ctx)
-    window:perform_action(action, pane)
-  end)}
-end
+      local ctx = {
+        window = window,
+        pane = pane,
+        path = path,
+        label = label,
+        current_workspace = window:active_workspace(),
+        workspace_history = workspace_cache.get_cache(),
+        mode = mode,
+      }
+      -- passing args to action?
+      local action = resolve_action(ctx)
+      window:perform_action(action, pane)
+    end)}
+  end
 
-function M.apply_to_config(config)
-  table.insert(config.keys, {
-    key = "B",
-    mods = "LEADER|SHIFT",
-    action = M.run_mode("alternate_workspace"),
+  function M.apply_to_config(config)
+    table.insert(config.keys, {
+      key = "B",
+      mods = "LEADER|SHIFT",
+      action = M.run_mode("alternate_workspace"),
     })
-end
+  end
 
-return M
+  return M
