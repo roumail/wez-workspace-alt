@@ -12,22 +12,18 @@ local function perform_tracked_switch(window, pane, target, spawn)
   window:perform_action(wezterm.action.SwitchToWorkspace(action), pane)
 end
 
-local function build_context(window, pane, path, label)
-  return {
-    window = window,
-    pane = pane,
-    path = path,
-    label = label,
-    current_workspace = window:active_workspace(),
-    workspace_history = workspace_cache.get_cache(),
-  }
-end
-
 --
 -- InputSelector UI gives us path, label
 function M.switch_workspace(selector)
   return wezterm.action_callback(function(window, pane, path, label)
-    local ctx = build_context(window, pane, path, label)
+    local ctx = {
+        window = window,
+        pane = pane,
+        path = path,
+        label = label,
+        current_workspace = window:active_workspace(),
+        workspace_history = workspace_cache.get_cache(),
+    }
     local result = selector(ctx)
     if not result then return end
     perform_tracked_switch(
