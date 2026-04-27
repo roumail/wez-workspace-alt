@@ -6,7 +6,11 @@ local M = {}
 local fifo_cache = wezterm.plugin.require("https://github.com/roumail/fifo-cache")
 local wez_new_ws = wezterm.plugin.require("https://github.com/roumail/wez-new-workspace")
 -- local wez_new_ws = require("plugins.wez-new-workspace.plugin")
-wez_new_ws.setup()
+-- https://github.com/wezterm/wezterm/issues/2933
+-- wsl expects this to be done sooner
+wezterm.on('gui-startup', function()
+  wez_new_ws.setup()
+end)
 local workspace_cache = fifo_cache.new(2)
 local DEFAULT_WORKSPACE = "default"
 
