@@ -144,6 +144,7 @@ function M.project_selector(opts)
     choices = choices,
     fuzzy = true,
     action = wezterm.action_callback(function(window, pane, path, label)
+      if not path and not label then return end
       local ctx = {
         window = window,
         pane = pane,
