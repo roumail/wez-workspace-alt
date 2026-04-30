@@ -199,39 +199,39 @@ function M.project_selector(mode, opts)
   end)
 end
 
-  function M.apply_to_config(config, opts)
-    local leader_key = string.upper(config.leader.key)
-    opts = opts or {}
-    my_keys = {
-      {
-        key = "w",
-        mods = "LEADER",
-        action = M.project_selector("workspace", opts),
-      },
-      {
-        key = leader_key,
-        mods = "LEADER|SHIFT",
-        action = M.project_selector("alternate_workspace", opts),
-      },
-      {
-        key    = "t",
-        mods   = "LEADER",
-        action = M.project_selector("tab", opts),
-      },
-      {
-        key    = "V",
-        mods   = "LEADER|SHIFT",
-        action = M.project_selector("split_v", opts),
-      },
-      {
-        key    = "H",
-        mods   = "LEADER|SHIFT",
-        action = M.project_selector("split_h", opts),
-      }
+function M.apply_to_config(config, opts)
+  local leader_key = string.upper(config.leader.key)
+  opts = opts or {}
+  my_keys = {
+    {
+      key = "w",
+      mods = "LEADER",
+      action = M.project_selector("workspace", opts),
+    },
+    {
+      key = leader_key,
+      mods = "LEADER|SHIFT",
+      action = M.project_selector("alternate_workspace", opts),
+    },
+    {
+      key    = "t",
+      mods   = "LEADER",
+      action = M.project_selector("tab", opts),
+    },
+    {
+      key    = "V",
+      mods   = "LEADER|SHIFT",
+      action = M.project_selector("split_v", opts),
+    },
+    {
+      key    = "H",
+      mods   = "LEADER|SHIFT",
+      action = M.project_selector("split_h", opts),
     }
-    for _, key in ipairs(my_keys) do
-      table.insert(config.keys, key)
-    end
+  }
+  for _, key in ipairs(my_keys) do
+    table.insert(config.keys, key)
   end
+end
 
   return M
