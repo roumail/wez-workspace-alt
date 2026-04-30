@@ -82,34 +82,6 @@ wezterm.on('workspace-removed', function(event)
 end)
 
 
-M.choice_sources = {
-  workspace = function(opts)
-    -- use defaults from wez-project-source
-    local projects = opts.projects or get_default_projects()
-    local choices = {}
-    for _, p in ipairs(projects) do
-      table.insert(choices, {
-        label = p.label,
-        id = p.path,
-      })
-    end
-    return choices
-  end,
-
-  switch = function(opts)
-    local names = wezterm.mux.get_workspace_names()
-
-    local choices = {}
-    for _, name in ipairs(names) do
-      table.insert(choices, {
-        label = name,
-        id = name,
-      })
-    end
-    return choices
-  end,
-}
-
 M.modes = {
   workspace = function(ctx)
     if not cache_settled then return nil end
@@ -163,49 +135,74 @@ M.modes = {
 }
 
 function M.project_selector(mode, opts)
-  local title = opts.title or("Select Project (" .. mode .. ")")
-  local source = M.choice_sources[mode] or M.choice_sources.workspace
-  local choices = source(opts)
-
-  return wezterm.action.InputSelector {
-    title = title,
-    choices = choices,
-    fuzzy = true,
-    action = wezterm.action_callback(function(window, pane, path, label)
-      if not path and not label then return end
-      if mode == "switch" then
-        window:perform_action(
-          wezterm.action.SwitchToWorkspace { name = label },
-          pane
-        )
-        return
-      end
-
-      local action = resolve_action({
+  local title = opts.title or ("Select Project (" .. mode .. ")")
+  -- source-selector layer
+  return wezterm.action_callback(function(window, pane)
+    if mode == "alternate_workspace" then
+      window:perform_action(resolve_action({
         window = window,
         pane = pane,
-        path = path,
-        label = label,
         current_workspace = window:active_workspace(),
         workspace_history = workspace_cache.get_cache(),
         mode = mode,
+      }), pane)
+      return
+    end
+    local projects = opts.projects or get_default_projects()
+    local active_workspaces = wezterm.mux.get_workspace_names()
+    local active_set = {}
+    local choices = {}
+
+    for _, name in ipairs(active_workspaces) do
+      active_set[name] = true
+      table.insert(choices, {
+        label = name,
+        id = nil,
       })
-      window:perform_action(action, pane)
-    end)}
-  end
+    end
+
+    for _, p in ipairs(projects) do
+      if type(p) == "table" and p.label and p.path then
+        if not active_set[p.label] then
+          table.insert(choices, {
+            label = p.label,
+            id = p.path,
+          })
+        end
+      end
+    end
+
+    -- input selector
+    window:perform_action(
+      wezterm.action.InputSelector {
+        title = title,
+        fuzzy=true,
+        --- use wezformat.format on active and display them above
+        choices = choices,
+        description = 'choose active or new workspace',
+        -- switcher layer
+        action = wezterm.action_callback(function(window, pane, path, label)
+          if not path and not label then return end
+          window:perform_action(resolve_action({
+            window = window,
+            pane = pane,
+            path = path,
+            label = label,
+            current_workspace = window:active_workspace(),
+            workspace_history = workspace_cache.get_cache(),
+            mode = mode,
+          }), pane)
+        end)
+      },
+      pane
+    )
+  end)
+end
 
   function M.apply_to_config(config, opts)
     local leader_key = string.upper(config.leader.key)
     opts = opts or {}
-    -- We don't distinguish from creating vs switching
-    -- In switching we want to see open workspaces
-    -- In creating we want to see our local
     my_keys = {
-      {
-        key = "s",
-        mods = "LEADER",
-        action = M.project_selector("switch", opts),
-      },
       {
         key = "w",
         mods = "LEADER",
