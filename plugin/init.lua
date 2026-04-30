@@ -15,6 +15,11 @@ end)
 local workspace_cache = fifo_cache.new(2)
 local DEFAULT_WORKSPACE = "default"
 
+local function get_default_projects()
+  local wez_projects = wezterm.plugin.require("https://github.com/roumail/wez-projects-source")
+  return wez_projects.load_projects()
+end
+
 local function resolve_action(ctx)
   local mode = ctx.mode
   local handler = M.modes[mode]
@@ -76,8 +81,38 @@ wezterm.on('workspace-removed', function(event)
   cache_settled = true
 end)
 
+
+M.choice_sources = {
+  workspace = function(opts)
+    -- use defaults from wez-project-source
+    local projects = opts.projects or get_default_projects()
+    local choices = {}
+    for _, p in ipairs(projects) do
+      table.insert(choices, {
+        label = p.label,
+        id = p.path,
+      })
+    end
+    return choices
+  end,
+
+  switch = function(opts)
+    local names = wezterm.mux.get_workspace_names()
+
+    local choices = {}
+    for _, name in ipairs(names) do
+      table.insert(choices, {
+        label = name,
+        id = name,
+      })
+    end
+    return choices
+  end,
+}
+
 M.modes = {
   workspace = function(ctx)
+    if not cache_settled then return nil end
     workspace_cache.add_value(ctx.label)
     return wezterm.action.SwitchToWorkspace({
       name = ctx.label,
@@ -127,36 +162,10 @@ M.modes = {
   end,
 }
 
-function M.run_mode(mode)
-  return wezterm.action_callback(function(window, pane)
-    local ctx = {
-      window = window,
-      pane = pane,
-      current_workspace = window:active_workspace(),
-      workspace_history = workspace_cache.get_cache(),
-      mode = mode,
-    }
-
-    local action = resolve_action(ctx)
-    if action then
-      window:perform_action(action, pane)
-    end
-  end)
-end
-
-function M.project_selector(opts)
-  opts = opts or {}
-  local mode = opts.mode or "workspace"
-
-  local projects = opts.projects
+function M.project_selector(mode, opts)
   local title = opts.title or("Select Project (" .. mode .. ")")
-
-  local choices = {}
-  for _, p in ipairs(projects) do
-    if type(p) == "table" and p.label and p.path then
-      table.insert(choices, { label = p.label, id = p.path })
-    end
-  end
+  local source = M.choice_sources[mode] or M.choice_sources.workspace
+  local choices = source(opts)
 
   return wezterm.action.InputSelector {
     title = title,
@@ -164,7 +173,15 @@ function M.project_selector(opts)
     fuzzy = true,
     action = wezterm.action_callback(function(window, pane, path, label)
       if not path and not label then return end
-      local ctx = {
+      if mode == "switch" then
+        window:perform_action(
+          wezterm.action.SwitchToWorkspace { name = label },
+          pane
+        )
+        return
+      end
+
+      local action = resolve_action({
         window = window,
         pane = pane,
         path = path,
@@ -172,19 +189,52 @@ function M.project_selector(opts)
         current_workspace = window:active_workspace(),
         workspace_history = workspace_cache.get_cache(),
         mode = mode,
-      }
-      -- passing args to action?
-      local action = resolve_action(ctx)
+      })
       window:perform_action(action, pane)
     end)}
   end
 
-  function M.apply_to_config(config)
-    table.insert(config.keys, {
-      key = "B",
-      mods = "LEADER|SHIFT",
-      action = M.run_mode("alternate_workspace"),
-    })
+  function M.apply_to_config(config, opts)
+    local leader_key = string.upper(config.leader.key)
+    opts = opts or {}
+    -- We don't distinguish from creating vs switching
+    -- In switching we want to see open workspaces
+    -- In creating we want to see our local
+    my_keys = {
+      {
+        key = "s",
+        mods = "LEADER",
+        action = M.project_selector("switch", opts),
+      },
+      {
+        key = "w",
+        mods = "LEADER",
+        action = M.project_selector("workspace", opts),
+      },
+      {
+        key = leader_key,
+        mods = "LEADER|SHIFT",
+        action = M.project_selector("alternate_workspace", opts),
+      },
+      {
+        key    = "t",
+        mods   = "LEADER",
+        action = M.project_selector("tab", opts),
+      },
+      {
+        key    = "V",
+        mods   = "LEADER|SHIFT",
+        action = M.project_selector("split_v", opts),
+      },
+      {
+        key    = "H",
+        mods   = "LEADER|SHIFT",
+        action = M.project_selector("split_h", opts),
+      }
+    }
+    for _, key in ipairs(my_keys) do
+      table.insert(config.keys, key)
+    end
   end
 
   return M
