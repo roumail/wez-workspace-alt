@@ -88,7 +88,7 @@ M.modes = {
     workspace_cache.add_value(ctx.label)
     return wezterm.action.SwitchToWorkspace({
       name = ctx.label,
-      spawn = { cwd = ctx.path },
+      spawn = { cwd = ctx.id },
     })
   end,
 
@@ -161,7 +161,7 @@ function M.project_selector(mode, opts)
       active_set[name] = true
       table.insert(choices, {
         label = name,
-        id = nil,
+        id = name,
       })
     end
 
@@ -185,11 +185,11 @@ function M.project_selector(mode, opts)
         choices = choices,
         description = 'choose active or new workspace',
         -- switcher layer
-        action = wezterm.action_callback(function(window, pane, path, label)
-          if not path and not label then return end
+        action = wezterm.action_callback(function(window, pane, id, label)
+          if not id and not label then return end
           window:perform_action(resolve_action({
             window = window,
-            pane = pane,
+            id = id,
             path = path,
             label = label,
             current_workspace = window:active_workspace(),
