@@ -15,7 +15,7 @@ end)
 local workspace_cache = fifo_cache.new(2)
 local DEFAULT_WORKSPACE = "default"
 
-local function get_default_projects()
+local function get_projects()
   local wez_projects = wezterm.plugin.require("https://github.com/roumail/wez-projects-source")
   return wez_projects.load_projects()
 end
@@ -200,7 +200,7 @@ function M.project_selector(mode, opts)
 	  end
       return
     end
-    local projects = opts.projects or get_default_projects()
+    local projects = get_projects()
     local active_workspaces = wezterm.mux.get_workspace_names()
     local active_set = {}
     local choices = {}
