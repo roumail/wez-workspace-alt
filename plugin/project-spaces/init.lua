@@ -1,9 +1,11 @@
 local wezterm = require 'wezterm'
 local bindings = require("project-spaces.bindings")
 local ws_labels = require("project-spaces.workspace_labels")
-local modes = require("project-spaces.modes")
+local mode_registry = require("project-spaces.modes")
+-- TODO: absorb this plugin as a module instead
+local projects = wezterm.plugin.require("https://github.com/roumail/wez-projects-source").load_projects()
 local events = require("project-spaces.events")
-local workspace_cache = require("project-spaces.workspace_cache")
+local ws_cache = require("project-spaces.workspace_cache")
 local M = {}
 
 -- local wez_new_ws = require("plugins.wez-new-workspace.plugin")
@@ -26,35 +28,36 @@ local function build_ctx(window, pane, mode, extra)
     pane = pane,
     mode = mode,
     current_workspace = window:active_workspace(),
-    workspace_history = workspace_cache.get(),
-    default_workspace = workspace_cache.default_workspace(),
-    id = extra and extra.id,
-    label = extra and extra.label,
-    path = extra and extra.path,
+    workspace_history = ws_cache.get(),
+    default_workspace = ws_cache.default_workspace(),
+    workspace_name = extra and extra.workspace_name,
+    cwd = extra and extra.cwd,
   }
 end
 
-function M.project_selector(mode, opts)
-  local title = opts.title or ("Select Project (" .. mode .. ")")
-  local modes = mode.build_modes()
+local function project_selector(capability, opts)
+  local opts = opts or {}
+  local title = opts.title or ("Select Project (" .. capability .. ")")
+  local handlers = mode_registry.build_modes()
   -- source-selector layer
   return wezterm.action_callback(function(window, pane)
-    if mode == "alternate_workspace" then
-      local ctx = build_ctx(window, pane, mode)
-      local action = resolve_action(modes, ctx)
+    if capability == "alternate_workspace" then
+      local ctx = build_ctx(window, pane, capability)
+      local action = resolve_action(handlers, ctx)
 
       if action then
         window:perform_action(action, pane)
 	  end
       return
     end
-    local projects = wezterm.plugin.require("https://github.com/roumail/wez-projects-source").load_projects()
     local active_workspaces = wezterm.mux.get_workspace_names()
     local active_set = {}
     local choices = {}
+    local choice_meta = {}
 
     for _, name in ipairs(active_workspaces) do
       active_set[name] = true
+      choice_meta[name] = { workspace_name = name, cwd = nil }
       table.insert(choices, {
         label = ws_labels.format_item(name, true),
         id = name,
@@ -64,8 +67,9 @@ function M.project_selector(mode, opts)
     for _, p in ipairs(projects) do
       if type(p) == "table" and p.label and p.path then
         if not active_set[p.label] then
+          choice_meta[p.path] = { workspace_name = p.label, cwd = p.path }
           table.insert(choices, {
-            label = format_item(p.label, false),
+            label = ws_labels.format_item(p.label, false),
             id = p.path,
           })
         end
@@ -83,12 +87,15 @@ function M.project_selector(mode, opts)
         -- switcher layer
         action = wezterm.action_callback(function(window, pane, id, label)
           if not id and not label then return end
-          local ctx = build_ctx(window, pane, mode, {
-              id = id,
-              label = label,
-              path = path,
+          local meta = choice_meta[id] or {}
+          local ctx = build_ctx(window, pane, capability, {
+              workspace_name = meta.workspace_name,
+              cwd = meta.cwd,
             })
-          window:perform_action(resolve_action(modes, ctx), pane)
+          local next_action = resolve_action(handlers, ctx)
+          if next_action then
+            window:perform_action(next_action, pane)
+          end
         end)
       },
       pane
@@ -98,7 +105,7 @@ end
 
 function M.apply_to_config(config, opts)
   bindings.apply(config, opts, function(mode)
-    return M.project_selector(mode, opts)
+    return project_selector(mode, opts)
   end)
 end
 

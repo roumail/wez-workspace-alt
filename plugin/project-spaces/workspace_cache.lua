@@ -19,7 +19,7 @@ function M.add(name)
 end
 
 function M.is_full()
-  return cache.is_ready()
+  return workspace_cache.is_ready()
 end
 
 function M.default_workspace()
@@ -71,9 +71,9 @@ function M.handle_workspace_removed(event)
   end
   -- rebalance in the case where a previously ready cache
   -- now needs a replacement
-  ready_prior = workspace_cache.is_ready()
+  local ready_prior = workspace_cache.is_ready()
   workspace_cache.evict_keys(event.removed)
-  ready_post = workspace_cache.is_ready()
+  local ready_post = workspace_cache.is_ready()
   if ready_prior and not ready_post then
     rebalance_cache(event.current)
   end
