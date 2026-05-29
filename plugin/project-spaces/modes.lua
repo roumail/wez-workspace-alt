@@ -65,7 +65,7 @@ function M.build_modes()
             target = history[1] == current and history[2] or history[1]
           end
 
-          ws_cache.add(target)
+          ws_cache.reorder()
           return wezterm.action.SwitchToWorkspace({
             name = target,
           })
