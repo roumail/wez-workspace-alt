@@ -10,7 +10,7 @@ Instead of thinking in raw directories, you operate on **project spaces**:
 * The same project can be opened in different contexts (workspace/tab/split)
 * Discovery and navigation are centralized through the fuzzy finder
 
-## 🔮 Why “Project Spaces”?
+## Why “Project Spaces”?
 
 The plugin started as a workspace toggle but evolved into a more general abstraction:
 
@@ -54,8 +54,6 @@ Behavior:
 
 * If fewer than 2 workspaces exist → toggle is a no-op
 * Re-selecting the same workspace does not duplicate it
-* If a workspace disappears, the **default workspace** is reintroduced to maintain a valid pair
-* Since sessions typically start in the default workspace, the toggle becomes usable almost immediately
 
 
 ## 📦 Installation
