@@ -5,6 +5,7 @@ local selector_builder = require("project-spaces.selector_builder")
 local events = require("project-spaces.events")
 local ws_cache = require("project-spaces.workspace_cache")
 local ws_new = require("project-spaces.new_workspace")
+local initialized_cache = false
 local M = {}
 -- TODO: take work, as a label, if I rename that, currently active workspace
 -- I'd have expected it to appear as another entry in my active projects under the new name
@@ -89,6 +90,11 @@ local function project_selector(capability, opts)
 end
 
 function M.apply_to_config(config, opts)
+  -- This check ensures we add default workspace to cache only runs once per WezTerm GUI session
+  if not initialized_cache then
+        ws_cache.add(ws_cache.default_workspace())
+    initialized_cache = true
+  end
   bindings.apply(config, opts, function(mode)
     return project_selector(mode, opts)
   end)
