@@ -26,34 +26,6 @@ function M.default_workspace()
   return DEFAULT_WORKSPACE
 end
 
-local function rebalance_cache(current)
-  local cache = workspace_cache.get_cache()
-
-  local in_cache = {}
-  for _, v in ipairs(cache) do
-    in_cache[v] = true
-  end
-
-  if not in_cache[DEFAULT_WORKSPACE] then
-    for _, v in ipairs(current) do
-      if v == DEFAULT_WORKSPACE then
-        workspace_cache.add_value(v)
-        return
-      end
-    end
-  end
-
-  -- Otherwise pick the first sorted candidate not already in cache
-  table.sort(current)
-
-  for _, v in ipairs(current) do
-    if not in_cache[v] then
-      workspace_cache.add_value(v)
-      return
-    end
-  end
-end
-
 function M.handle_workspace_removed(event)
   cache_settled = false
   -- Normalize cache first to prevent cache being out of sync
@@ -69,14 +41,7 @@ function M.handle_workspace_removed(event)
       workspace_cache.evict_keys(name)
     end
   end
-  -- rebalance in the case where a previously ready cache
-  -- now needs a replacement
-  local ready_prior = workspace_cache.is_ready()
   workspace_cache.evict_keys(event.removed)
-  local ready_post = workspace_cache.is_ready()
-  if ready_prior and not ready_post then
-    rebalance_cache(event.current)
-  end
   cache_settled = true
 end
 
