@@ -50,14 +50,15 @@ function M.build_modes()
         end,
 
         alternate_workspace = function(ctx)
-          -- these come from history, they should be clean already
           if not ws_cache.is_settled() then return nil end
-          local current = ctx.current_workspace
-          ws_cache.add(current)
-          local target
-          local default_ws = ws_cache.default_workspace()
           if not ws_cache.is_full() then return nil end
+          -- This is what we will be switching from so we reverse the order
           ws_cache.reorder()
+          local history = ctx.workspace_history
+          local target = history[1] == current and history[2] or history[1]
+          -- wezterm.log_info("history post", history)
+          -- wezterm.log_info("target", target)
+          -- wezterm.log_info("-------")
           return wezterm.action.SwitchToWorkspace({
             name = target,
           })
