@@ -22,6 +22,10 @@ function M.is_full()
   return workspace_cache.is_ready()
 end
 
+function M.reorder()
+  return workspace_cache.reverse()
+end
+
 function M.default_workspace()
   return DEFAULT_WORKSPACE
 end

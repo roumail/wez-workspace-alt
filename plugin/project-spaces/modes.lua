@@ -56,16 +56,8 @@ function M.build_modes()
           ws_cache.add(current)
           local target
           local default_ws = ws_cache.default_workspace()
-          -- first trigger
-          if not ws_cache.is_full() then
-            if current == default_ws then return nil end
-            target = default_ws
-          else
-            local history = ctx.workspace_history
-            target = history[1] == current and history[2] or history[1]
-          end
-
-          ws_cache.add(target)
+          if not ws_cache.is_full() then return nil end
+          ws_cache.reorder()
           return wezterm.action.SwitchToWorkspace({
             name = target,
           })
